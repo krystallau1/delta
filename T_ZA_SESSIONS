@@ -1,0 +1,43 @@
+create or replace table T_ZA_SESSIONS AS (
+
+SELECT user_id,
+      received_at,
+      event,
+      id,
+      SUM(is_new_session) OVER (ORDER BY user_id, received_at) AS global_session_id,
+      SUM(is_new_session) OVER (PARTITION BY user_id ORDER BY received_at) AS user_session_id
+      FROM (
+                SELECT *,
+                CASE WHEN LAST_EVENT IS NULL OR DATEDIFF(s, '1970-01-01 00:00:00', received_at) - DATEDIFF(s, '1970-01-01 00:00:00', last_event) >= (30*60) THEN 1 ELSE 0 END AS IS_NEW_SESSION
+                        FROM (
+                            SELECT context_library_name, 
+                            user_id,
+                            received_at,
+                            event,
+                            id,
+                            LAG(received_at,1) OVER (PARTITION BY user_id ORDER BY received_at) AS last_event
+                            FROM za_sab_connect_android.tracks 
+
+                            union
+
+                            SELECT context_library_name,
+                            user_id,
+                            received_at,
+                            event,
+                            id,
+                            LAG(received_at,1) OVER (PARTITION BY user_id ORDER BY received_at) AS last_event
+                            FROM za_sab_connect_ios.tracks 
+
+                            union
+
+                            SELECT context_library_name,
+                            user_id,
+                            received_at,
+                            event,
+                            id,
+                            LAG(received_at,1) OVER (PARTITION BY user_id ORDER BY received_at) AS last_event
+                            FROM za_sab_connect_web.tracks 
+                            ) last
+            ) final
+  
+ );
