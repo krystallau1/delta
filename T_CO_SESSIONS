@@ -16,27 +16,11 @@ SELECT user_id,
                             event,
                             id,
                             LAG(received_at,1) OVER (PARTITION BY user_id ORDER BY received_at) AS last_event
-                            FROM br_parceiro_android.tracks 
-
-                            union
-
-                            SELECT context_library_name,
-                            user_id,
-                            received_at,
-                            event,
-                            id,
-                            LAG(received_at,1) OVER (PARTITION BY user_id ORDER BY received_at) AS last_event
-                            FROM br_parceiro_ios.tracks 
-
-                            union
-
-                            SELECT context_library_name,
-                            user_id,
-                            received_at,
-                            event,
-                            id,
-                            LAG(received_at,1) OVER (PARTITION BY user_id ORDER BY received_at) AS last_event
-                            FROM br_parceiro_web.tracks 
+                            FROM  "SEGMENT_EVENTS"."CO_BEES_PROD"."TRACKS"
+                            --filter out production testing
+                            where context_app_namespace in ('com.abi.bees.colombia', 'com.abinbev.android.tapwiser.beesColombia')
+                            and split_part(user_id, '_', 1)  not in ('12510627', '12510589', '11240873', '12265014')
+                            
                             ) last
             ) final
   
